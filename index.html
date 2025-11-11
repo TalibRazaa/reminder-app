@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RemindMe - Monthly Reminder App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B9A7A;
+            --secondary: #F7F5F3;
+            --accent: #E8A598;
+            --neutral: #4A4A4A;
+            --background: #FFFFFF;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="dark"] {
+            --primary: #a8b899;
+            --secondary: #374151;
+            --accent: #f0b8a8;
+            --neutral: #d1d5db;
+            --background: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --glass-bg: rgba(17, 24, 39, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('/reminder-app/assets/hero-workspace-B51rmkDv.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        [data-theme="dark"] .hero-section {
+            background: linear-gradient(rgba(17, 24, 39, 0.9), rgba(17, 24, 39, 0.9)), url('/reminder-app/assets/hero-workspace-B51rmkDv.png');
+        }
+        
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px var(--shadow-color);
+        }
+        
+        .reminder-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        .reminder-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .priority-high { border-left: 4px solid #E8A598; }
+        .priority-medium { border-left: 4px solid #8B9A7A; }
+        .priority-low { border-left: 4px solid #F7F5F3; }
+        
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .floating-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 8px 24px rgba(139, 154, 122, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(139, 154, 122, 0.6);
+        }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+        }
+        
+        [data-theme="dark"] .theme-toggle {
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        [data-theme="dark"] .theme-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .search-input {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 154, 122, 0.1);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">R</span>
+                        </div>
+                        <span class="text-xl font-bold text-gray-800">RemindMe</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="index.html" class="nav-link active text-gray-700 font-medium">Dashboard</a>
+                        <a href="calendar.html" class="nav-link text-gray-700 font-medium">Calendar</a>
+                        <a href="settings.html" class="nav-link text-gray-700 font-medium">Settings</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search reminders..." 
+                               class="search-input w-64 px-4 py-2 rounded-lg text-sm">
+                        <div class="absolute right-3 top-2.5 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <button id="themeToggle" class="theme-toggle p-2 rounded-lg border border-gray-200 hover:border-green-500 transition-colors text-gray-600 hover:text-green-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                    <div class="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full cursor-pointer"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section pt-20 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    Stay Organized, 
+                    <span class="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">Stay Productive</span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                    Your intelligent monthly reminder companion. Never miss important tasks, meetings, or personal commitments again.
+                </p>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="openReminderModal()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105">
+                        Add Reminder
+                    </button>
+                    <button onclick="scrollToReminders()" class="border-2 border-green-500 text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-green-50 transition-all duration-300">
+                        View Today's Tasks
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card rounded-xl p-6 text-center">
+                <div class="text-3xl font-bold mb-2" id="totalReminders">12</div>
+                <div class="text-sm opacity-90">Total Reminders</div>
+            </div>
+            <div class="glass-card rounded-xl p-6 text-center">
+                <div class="text-3xl font-bold text-green-600 mb-2" id="completedToday">5</div>
+                <div class="text-sm text-gray-600">Completed Today</div>
+            </div>
+            <div class="glass-card rounded-xl p-6 text-center">
+                <div class="text-3xl font-bold text-orange-600 mb-2" id="pendingToday">3</div>
+                <div class="text-sm text-gray-600">Pending Today</div>
+            </div>
+            <div class="glass-card rounded-xl p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600 mb-2" id="upcomingWeek">7</div>
+                <div class="text-sm text-gray-600">This Week</div>
+            </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="mb-8">
+            <div class="splide" id="category-carousel">
+                <div class="splide__track">
+                    <ul class="splide__list">
+                        <li class="splide__slide">
+                            <div class="category-filter active" data-category="all">
+                                <div class="category-icon bg-gradient-to-br from-gray-400 to-gray-600 text-white mx-auto mb-2">📋</div>
+                                <div class="text-sm font-medium text-gray-700">All Tasks</div>
+                                <div class="text-xs text-gray-500">12 items</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="category-filter" data-category="work">
+                                <div class="category-icon bg-gradient-to-br from-blue-400 to-blue-600 text-white mx-auto mb-2">💼</div>
+                                <div class="text-sm font-medium text-gray-700">Work</div>
+                                <div class="text-xs text-gray-500">5 items</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="category-filter" data-category="personal">
+                                <div class="category-icon bg-gradient-to-br from-pink-400 to-pink-600 text-white mx-auto mb-2">🏠</div>
+                                <div class="text-sm font-medium text-gray-700">Personal</div>
+                                <div class="text-xs text-gray-500">4 items</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="category-filter" data-category="health">
+                                <div class="category-icon bg-gradient-to-br from-green-400 to-green-600 text-white mx-auto mb-2">🏃</div>
+                                <div class="text-sm font-medium text-gray-700">Health</div>
+                                <div class="text-xs text-gray-500">2 items</div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="category-filter" data-category="shopping">
+                                <div class="category-icon bg-gradient-to-br from-purple-400 to-purple-600 text-white mx-auto mb-2">🛒</div>
+                                <div class="text-sm font-medium text-gray-700">Shopping</div>
+                                <div class="text-xs text-gray-500">1 item</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Reminders -->
+        <div class="mb-8" id="reminders-section">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Today's Reminders</h2>
+                <div class="flex items-center space-x-2">
+                    <button class="text-sm text-gray-500 hover:text-gray-700">Sort by priority</button>
+                    <button class="text-sm text-gray-500 hover:text-gray-700">Sort by time</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="remindersGrid">
+                <!-- Reminder cards will be dynamically generated -->
+            </div>
+        </div>
+
+        <!-- Productivity Chart -->
+        <div class="glass-card rounded-xl p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Weekly Productivity</h3>
+            <div id="productivityChart" style="height: 300px;"></div>
+        </div>
+
+        <!-- Upcoming Reminders -->
+        <div class="glass-card rounded-xl p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Upcoming This Week</h3>
+            <div class="space-y-4" id="upcomingReminders">
+                <!-- Upcoming reminders will be dynamically generated -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button onclick="openReminderModal()" class="floating-btn flex items-center justify-center text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+    </button>
+
+    <!-- Reminder Modal -->
+    <div id="reminderModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="closeReminderModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl p-8 max-w-md w-full transform scale-95 opacity-0 transition-all duration-300" id="modalContent">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">Add New Reminder</h3>
+                    <button onclick="closeReminderModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="reminderForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                        <input type="text" id="reminderTitle" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter reminder title" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea id="reminderDescription" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Add description (optional)"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                            <input type="date" id="reminderDate" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                            <input type="time" id="reminderTime" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select id="reminderCategory" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="work">💼 Work</option>
+                            <option value="personal">🏠 Personal</option>
+                            <option value="health">🏃 Health</option>
+                            <option value="shopping">🛒 Shopping</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="priority" value="high" class="text-red-500">
+                                <span class="ml-2 text-sm">High</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="priority" value="medium" class="text-yellow-500" checked>
+                                <span class="ml-2 text-sm">Medium</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="priority" value="low" class="text-green-500">
+                                <span class="ml-2 text-sm">Low</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeReminderModal()" class="flex-1 px-6 py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all">
+                            Add Reminder
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-gray-600">
+                <p>&copy; 2025 RemindMe. Crafted with care for productive minds.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
